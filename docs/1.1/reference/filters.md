@@ -154,6 +154,60 @@ state change, except when the event `action` is `:resolve`. The resolve action
 is set on an event when its check result status is `0` following one or more prior
 non-zero statuses.
 
+#### Example: Handle only certain actions
+
+The following filter definition, entitled `action_create` will match [event data][3] for the action `create` only. This is particularly useful for use with `chatops` handlers such as `slack`, `hipchat`, `mattermost`, `microsoft-teams`, etc.
+
+~~~json
+{
+  "filters": {
+    "action_create": {
+      "negate": false,
+      "attributes": {
+        "action": "eval value.to_s == create"
+      }
+    }
+  }
+}
+~~~
+
+A similar adaptation could be used to handle multiple actions:
+~~~json
+{
+  "filters": {
+    "action_create_resolve": {
+      "negate": false,
+      "attributes": {
+        "action": "eval %w[create resolve].include? value.to_s"
+      }
+    }
+  }
+}
+~~~
+
+This might be helpful for systems that have bidirectional integrations such as `pagerduty`, `opsgenie`, `signifai`, etc.
+
+
+In both of these scenarios you will need to configure your handler to use your new filters like this:
+~~~json
+{
+  "handlers": {
+    "pagerduty": {
+      "type": "pipe",
+      "filters": [
+        "actions_create_resolve"
+      ],
+      "severities": [
+        "ok",
+        "warning",
+        "critical"
+      ],
+      "command": "handler-pagerduty.rb"
+    }
+  }
+}
+~~~
+
 
 #### Example: Handling repeated events
 
