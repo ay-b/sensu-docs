@@ -187,8 +187,47 @@ A similar adaptation could be used to handle multiple actions:
 
 This might be helpful for systems that have bidirectional integrations such as `pagerduty`, `opsgenie`, `signifai`, etc.
 
+More complex example: you have some checks that shall throw an alert at first occurrence, some — at second and a few — at 5th. Moreover, you want to get only alerts, but negate `resolve` actions in you Slack channel. Then the code will be:
 
-In both of these scenarios you will need to configure your handler to use your new filters like this:
+~~~json
+{
+  "filters": {
+    "slack": {
+      "negate": true,
+      "attributes": {
+        "occurrences": "eval: value != :::check.occurrences:::",
+        "action": "eval: %w[resolve].include? value.to_s"
+      }
+    }
+  }
+}
+~~~
+
+Keep in mind that "check.occurrences" *attribute* is taken from the check's json, not from an event. Event's one is the "value". For example, this is the dummy check config:
+
+~~~json
+{
+  "checks": {
+    "dummy": {
+      "command": "/checks/dummy.sh",
+      "handlers": [
+        "slack"
+      ],
+      "subscribers": [
+        "sensu-agent"
+      ],
+      "interval": 10,
+      "occurrences": 2,
+      "refresh": 80
+    }
+  }
+}
+~~~
+
+It says that we want to get alerted for the first time at the second occurrence and then every 10th (refresh/interval+occurrences).
+Slack filter will negate all alerts that have occurrences counter not equal to given parameter *or* having the "resolve" action.
+
+In all of these scenarios you will need to configure your handler to use your new filters like this:
 ~~~json
 {
   "handlers": {
